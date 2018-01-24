@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <amqp:connector name="AMQP_0_9_Connector_RabbitMQ" validateConnections="true" host="192.168.93.135" port="8090" username="mule" password="mule" doc:name="AMQP-0-9 Connector"/>
+    <flow name="rabbitmqTopicPublisherFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/amqptopic" allowedMethods="POST" doc:name="HTTP"/>
+        <amqp:outbound-endpoint exchangeName="amq.topic" exchangeType="topic" exchangeDurable="true" responseTimeout="10000" connector-ref="AMQP_0_9_Connector_RabbitMQ" doc:name="AMQP-0-9"/>
+        <logger message="published message is : #[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="message has been published to the topic" doc:name="Set Payload"/>
+    </flow>
+    <flow name="rabbitmqTopicSubscriberFlow">
+        <amqp:inbound-endpoint exchangeName="amq.topic" exchangeType="topic" exchangeDurable="true" responseTimeout="10000" connector-ref="AMQP_0_9_Connector_RabbitMQ" doc:name="AMQP-0-9"/>
+        <logger message="subscribed message is :#[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+    </flow>
+        <flow name="rabbitmqQueueSenderFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/amqpqueue" allowedMethods="POST" doc:name="HTTP"/>
+        <amqp:outbound-endpoint    responseTimeout="10000" connector-ref="AMQP_0_9_Connector_RabbitMQ" doc:name="AMQP-0-9" queueName="sample.mule.queue"/>
+        <logger message="Sent message is : #[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="message has been sent to the queue" doc:name="Set Payload"/>
+    </flow>
+    <flow name="rabbitmqQueueReceiverFlow">
+        <amqp:inbound-endpoint    responseTimeout="10000" connector-ref="AMQP_0_9_Connector_RabbitMQ" doc:name="AMQP-0-9" queueName="sample.mule.queue"/>
+        <logger message="received message is :#[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
